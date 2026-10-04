@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TAB Site Master</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0f172a">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/icon.svg">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -24,7 +26,8 @@ body{background:#f1f5f9;font-family:Inter,system-ui,sans-serif}
       <h1 class="text-base font-bold">TAB Site Master</h1>
       <p class="text-[11px] text-slate-400">Testing &amp; Balancing Tracker</p>
     </div>
-    <div class="hidden sm:flex gap-2">
+    <div class="hidden sm:flex gap-2 items-center">
+      <button id="installBtn" class="hidden bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-xs font-medium">Install app</button>
       <button onclick="openModal()" class="bg-sky-600 hover:bg-sky-500 px-3 py-1.5 rounded-lg text-xs font-medium">+ Add tag</button>
       <button onclick="exportCSV()" class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">Export CSV</button>
       <button onclick="resetData()" class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">Reset</button>
@@ -91,7 +94,8 @@ body{background:#f1f5f9;font-family:Inter,system-ui,sans-serif}
       <div class="grid grid-cols-2 gap-3">
         <label class="block text-xs font-semibold">Tag ID *<input id="f-tag" required placeholder="AHU-L02-01" class="mt-1 w-full px-2.5 py-2 border border-slate-300 rounded-lg uppercase font-normal"></label>
         <label class="block text-xs font-semibold">System *<select id="f-system" class="mt-1 w-full px-2.5 py-2 border border-slate-300 rounded-lg font-normal">
-          <option value="AHU">AHU</option><option value="FCU">FCU</option><option value="VAV">VAV box</option><option value="VCD">VCD</option><option value="PUMP">Pump</option><option value="DAMPER">Fire damper</option></select></label>
+          <option value="AHU">AHU</option><option value="FCU">FCU</option><option value="VAV">VAV box</option><option value="VCD">VCD</option><option value="PUMP">Pump</option><option value="DAMPER">Fire damper</option>
+        </select></label>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <label class="block text-xs font-semibold">Floor / zone *<input id="f-fl" required placeholder="Level 2 - Zone A" class="mt-1 w-full px-2.5 py-2 border border-slate-300 rounded-lg font-normal"></label>
@@ -207,7 +211,7 @@ $('form').addEventListener('submit',e=>{
   save(); closeModal(); render();
 });
 function exportCSV(){
-  const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const cell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
   const head=['Tag','System','Floor','Tech','Status',...TASKS,'Updated','Remarks'];
   const lines=[head.map(cell).join(',')].concat(items.map(i=>[i.tag,i.system,i.floor,i.tech,isDone(i)?'Completed':'Pending',...i.tasks.map(t=>t?'Yes':'No'),i.updated,i.remarks].map(cell).join(',')));
   const a=document.createElement('a');
@@ -218,8 +222,32 @@ function resetData(){ if(confirm('Reset to sample data? Your changes will be los
 function clearFilters(){ filter='ALL'; $('q').value=''; $('f-sys').value='ALL'; $('f-floor').value='ALL'; render(); }
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;render();});
 $('q').addEventListener('input',render); $('f-sys').addEventListener('change',render); $('f-floor').addEventListener('change',render);
+
+let deferredPrompt = null;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredPrompt = event;
+  installBtn.classList.remove('hidden');
+});
+
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.classList.add('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+  installBtn.classList.add('hidden');
+});
+
 render();
-if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
